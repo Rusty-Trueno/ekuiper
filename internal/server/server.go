@@ -16,6 +16,7 @@ package server
 
 import (
 	"github.com/lf-edge/ekuiper/internal/conf"
+	"github.com/lf-edge/ekuiper/internal/kubeedge"
 	"github.com/lf-edge/ekuiper/internal/pkg/sqlkv"
 	"github.com/lf-edge/ekuiper/internal/plugin"
 	"github.com/lf-edge/ekuiper/internal/processor"
@@ -45,6 +46,9 @@ var (
 )
 
 func StartUp(Version, LoadFileType string) {
+	//start up kubeedge
+	ke := kubeedge.New()
+	go ke.StartUp()
 	version = Version
 	conf.LoadFileType = LoadFileType
 	startTimeStamp = time.Now().Unix()

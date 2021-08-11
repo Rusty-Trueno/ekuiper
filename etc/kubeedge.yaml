@@ -1,0 +1,5 @@
+# mqtt config
+qos: 1
+servers: [tcp://8.140.116.56:1883]
+# kubeedge config
+node: edge
