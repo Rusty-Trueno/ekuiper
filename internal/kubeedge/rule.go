@@ -7,6 +7,7 @@ import (
 	"github.com/lf-edge/ekuiper/internal/kubeedge/constant"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/model"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 type Rule struct {
@@ -31,6 +32,7 @@ func NewRule(Name, Sql string, Actions []string, conn MQTT.Client) *Rule {
 }
 
 func (r *Rule) Watch() {
+	r.handleRuleOpt()
 	logrus.Infof("rule %+v start watch", r)
 	if token := r.conn.Subscribe(
 		constant.DeviceETPrefix+r.Name+constant.TwinETDeltaSuffix,
@@ -42,11 +44,15 @@ func (r *Rule) Watch() {
 				logrus.Errorf("json unmarshal err:%v\n", err)
 			}
 			logrus.Printf("\nsync twins -> un sync twins is %+v", device.Delta)
-			//for k, v := range device.Delta {
-			//	switch k {
-			//
-			//	}
-			//}
+			for k, v := range device.Delta {
+				switch k {
+				case "sql":
+					r.sql = v
+				case "actions":
+					r.actions = strings.Split(v, ",")
+				}
+			}
+			r.handleRuleOpt()
 		}); token.Wait() && token.Error() != nil {
 		logrus.Errorf("watch stream failed, error is %v", token.Error())
 	}
@@ -56,4 +62,8 @@ func (r *Rule) Watch() {
 
 func (r *Rule) UnWatch() {
 	r.cancel()
+}
+
+func (r *Rule) handleRuleOpt() {
+	logrus.Infof("rule sql is %s, actions is %v", r.sql, r.actions)
 }

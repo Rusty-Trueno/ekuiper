@@ -94,6 +94,6 @@ func (s *Stream) handleStreamOpt() {
 
 	sql := fmt.Sprintf("create stream %s (%s) with (\"%s\");", name, strings.Join(fields, ","), datasoure)
 
-	logrus.Infof("sql is %s", sql)
+	logrus.Infof("stream sql is %s", sql)
 
 }
