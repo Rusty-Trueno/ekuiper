@@ -6,28 +6,31 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/constant"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/model"
+	"github.com/lf-edge/ekuiper/internal/processor"
 	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 type Rule struct {
-	Name    string
-	done    context.Context
-	cancel  context.CancelFunc
-	sql     string
-	actions []string
-	conn    MQTT.Client
+	Name          string
+	done          context.Context
+	cancel        context.CancelFunc
+	sql           string
+	actions       []string
+	conn          MQTT.Client
+	ruleProcessor *processor.RuleProcessor
 }
 
-func NewRule(Name, Sql string, Actions []string, conn MQTT.Client) *Rule {
+func NewRule(Name, Sql string, Actions []string, conn MQTT.Client, ruleProcessor *processor.RuleProcessor) *Rule {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Rule{
-		Name:    Name,
-		done:    ctx,
-		cancel:  cancel,
-		sql:     Sql,
-		actions: Actions,
-		conn:    conn,
+		Name:          Name,
+		done:          ctx,
+		cancel:        cancel,
+		sql:           Sql,
+		actions:       Actions,
+		conn:          conn,
+		ruleProcessor: ruleProcessor,
 	}
 }
 

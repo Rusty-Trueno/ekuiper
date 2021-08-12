@@ -9,6 +9,7 @@ import (
 	"github.com/lf-edge/ekuiper/internal/conf"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/constant"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/model"
+	"github.com/lf-edge/ekuiper/internal/processor"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"strings"
@@ -16,10 +17,12 @@ import (
 
 type Manager struct {
 	Config
-	rules   map[string]*Rule
-	streams map[string]*Stream
-	conn    MQTT.Client
-	logger  *logrus.Entry
+	rules           map[string]*Rule
+	streams         map[string]*Stream
+	conn            MQTT.Client
+	logger          *logrus.Entry
+	streamProcessor *processor.StreamProcessor
+	ruleProcessor   *processor.RuleProcessor
 }
 
 type Config struct {
@@ -28,7 +31,7 @@ type Config struct {
 	Node    string   `yaml:"node"`
 }
 
-func New() *Manager {
+func New(streamProcessor *processor.StreamProcessor, ruleProcessor *processor.RuleProcessor) *Manager {
 	lg := logrus.WithField("pkg", "kubeedge")
 	confPath := "kubeedge.yaml"
 	confFile, err := conf.LoadConf(confPath)
@@ -44,10 +47,12 @@ func New() *Manager {
 		return nil
 	}
 	return &Manager{
-		Config:  cfg,
-		logger:  lg,
-		streams: make(map[string]*Stream),
-		rules:   make(map[string]*Rule),
+		Config:          cfg,
+		logger:          lg,
+		streams:         make(map[string]*Stream),
+		rules:           make(map[string]*Rule),
+		streamProcessor: streamProcessor,
+		ruleProcessor:   ruleProcessor,
 	}
 }
 
@@ -121,12 +126,12 @@ func (m *Manager) getAllMembers() {
 		if strings.HasPrefix(id, "rule-") {
 			dd := m.getMemberDetail(id)
 			Sql, Actions := formatRule(dd)
-			rule := NewRule(id, Sql, Actions, m.conn)
+			rule := NewRule(id, Sql, Actions, m.conn, m.ruleProcessor)
 			m.rules[id] = rule
 		} else if strings.HasPrefix(id, "stream-") {
 			dd := m.getMemberDetail(id)
 			Datasource, Fields := formatStream(dd)
-			stream := NewStream(id, Datasource, Fields, m.conn)
+			stream := NewStream(id, Datasource, Fields, m.conn, m.streamProcessor)
 			m.streams[id] = stream
 		}
 	}
@@ -151,13 +156,13 @@ func (m *Manager) watchMemberUpdate(done <-chan struct{}) {
 				if strings.HasPrefix(id, "rule-") {
 					dd := m.getMemberDetail(id)
 					Sql, Actions := formatRule(dd)
-					rule := NewRule(id, Sql, Actions, m.conn)
+					rule := NewRule(id, Sql, Actions, m.conn, m.ruleProcessor)
 					m.rules[id] = rule
 					go rule.Watch()
 				} else if strings.HasPrefix(id, "stream-") {
 					dd := m.getMemberDetail(id)
 					Datasource, Fields := formatStream(dd)
-					stream := NewStream(id, Datasource, Fields, m.conn)
+					stream := NewStream(id, Datasource, Fields, m.conn, m.streamProcessor)
 					m.streams[id] = stream
 					go stream.Watch()
 				}

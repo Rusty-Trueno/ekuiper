@@ -7,6 +7,8 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/constant"
 	"github.com/lf-edge/ekuiper/internal/kubeedge/model"
+	"github.com/lf-edge/ekuiper/internal/processor"
+	"github.com/lf-edge/ekuiper/pkg/ast"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -23,23 +25,25 @@ var (
 )
 
 type Stream struct {
-	Name       string
-	done       context.Context
-	cancel     context.CancelFunc
-	fields     map[string]string
-	datasource string
-	conn       MQTT.Client
+	Name            string
+	done            context.Context
+	cancel          context.CancelFunc
+	fields          map[string]string
+	datasource      string
+	conn            MQTT.Client
+	streamProcessor *processor.StreamProcessor
 }
 
-func NewStream(Name, Datasource string, Fields map[string]string, conn MQTT.Client) *Stream {
+func NewStream(Name, Datasource string, Fields map[string]string, conn MQTT.Client, streamProcessor *processor.StreamProcessor) *Stream {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Stream{
-		Name:       Name,
-		done:       ctx,
-		cancel:     cancel,
-		fields:     Fields,
-		datasource: Datasource,
-		conn:       conn,
+		Name:            Name,
+		done:            ctx,
+		cancel:          cancel,
+		fields:          Fields,
+		datasource:      Datasource,
+		conn:            conn,
+		streamProcessor: streamProcessor,
 	}
 }
 
@@ -78,7 +82,8 @@ func (s *Stream) UnWatch() {
 
 func (s *Stream) handleStreamOpt() {
 	//check stream first
-	name := s.Name
+	strs := strings.Split(s.Name, "-")
+	name := strs[0] + "_" + strs[1]
 	fields := make([]string, 0)
 
 	for k, v := range s.fields {
@@ -92,8 +97,14 @@ func (s *Stream) handleStreamOpt() {
 
 	datasoure := s.datasource
 
-	sql := fmt.Sprintf("create stream %s (%s) with (\"%s\");", name, strings.Join(fields, ","), datasoure)
-
+	sql := fmt.Sprintf("create stream %s (%s) with (datasource=\"%s\");", name, strings.Join(fields, ","), datasoure)
 	logrus.Infof("stream sql is %s", sql)
+
+	content, err := s.streamProcessor.ExecReplaceStream(sql, ast.TypeStream)
+	if err != nil {
+		logrus.Errorf("exec stream sql failed, error is %v", err)
+	} else {
+		logrus.Infof("exec stream sql succeed, content is %v", content)
+	}
 
 }

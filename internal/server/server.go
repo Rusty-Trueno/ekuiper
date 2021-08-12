@@ -46,9 +46,6 @@ var (
 )
 
 func StartUp(Version, LoadFileType string) {
-	//start up kubeedge
-	ke := kubeedge.New()
-	go ke.StartUp()
 	version = Version
 	conf.LoadFileType = LoadFileType
 	startTimeStamp = time.Now().Unix()
@@ -166,6 +163,10 @@ func StartUp(Version, LoadFileType string) {
 	msg := fmt.Sprintf("Serving kuiper (version - %s) on port %d, and restful api on %s://%s:%d. \n", Version, conf.Config.Basic.Port, restHttpType, conf.Config.Basic.RestIp, conf.Config.Basic.RestPort)
 	logger.Info(msg)
 	fmt.Printf(msg)
+
+	//Start up kubeedge
+	ke := kubeedge.New(streamProcessor, ruleProcessor)
+	go ke.StartUp()
 
 	//Stop the services
 	sigint := make(chan os.Signal, 1)
