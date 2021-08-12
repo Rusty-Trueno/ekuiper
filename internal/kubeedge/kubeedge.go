@@ -220,17 +220,13 @@ func (m *Manager) watchAllStreams() {
 	}
 }
 
-func formatStream(device *model.DeviceTwinUpdate) (Datasource string, Fields []Field) {
-	Fields = make([]Field, 0)
+func formatStream(device *model.DeviceTwinUpdate) (Datasource string, Fields map[string]string) {
+	Fields = make(map[string]string, 0)
 	for k, v := range device.Twin {
 		if k == "datasource" {
 			Datasource = *v.Expected.Value
 		} else {
-			field := Field{
-				value: *v.Expected.Value,
-				_type: v.Metadata.Type,
-			}
-			Fields = append(Fields, field)
+			Fields[k] = v.Metadata.Type
 		}
 	}
 	return Datasource, Fields
