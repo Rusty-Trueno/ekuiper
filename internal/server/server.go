@@ -16,6 +16,7 @@ package server
 
 import (
 	"github.com/lf-edge/ekuiper/internal/conf"
+	"github.com/lf-edge/ekuiper/internal/kubeedge"
 	"github.com/lf-edge/ekuiper/internal/pkg/sqlkv"
 	"github.com/lf-edge/ekuiper/internal/plugin"
 	"github.com/lf-edge/ekuiper/internal/processor"
@@ -162,6 +163,10 @@ func StartUp(Version, LoadFileType string) {
 	msg := fmt.Sprintf("Serving kuiper (version - %s) on port %d, and restful api on %s://%s:%d. \n", Version, conf.Config.Basic.Port, restHttpType, conf.Config.Basic.RestIp, conf.Config.Basic.RestPort)
 	logger.Info(msg)
 	fmt.Printf(msg)
+
+	//Start up kubeedge
+	ke := kubeedge.New(streamProcessor, ruleProcessor)
+	go ke.StartUp()
 
 	//Stop the services
 	sigint := make(chan os.Signal, 1)
