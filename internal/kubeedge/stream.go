@@ -77,7 +77,19 @@ func (s *Stream) Watch() {
 }
 
 func (s *Stream) UnWatch() {
+	s.handleStreamDelete()
 	s.cancel()
+}
+
+func (s *Stream) handleStreamDelete() {
+	strs := strings.Split(s.Name, "-")
+	name := strs[0] + "_" + strs[1]
+	content, err := s.streamProcessor.DropStream(name, ast.TypeStream)
+	if err != nil {
+		logrus.Errorf("drop stream %s failed, error is %v", name, err)
+	} else {
+		logrus.Infof("drop stream %s sql succeed, content is %v", name, content)
+	}
 }
 
 func (s *Stream) handleStreamOpt() {
