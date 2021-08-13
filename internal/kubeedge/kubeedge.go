@@ -82,9 +82,6 @@ func (m *Manager) initMqtt() error {
 	opts.OnConnect = func(client MQTT.Client) {
 		m.logger.Infof("Connect succeed!\n")
 	}
-	opts.OnConnect = func(client MQTT.Client) {
-		m.logger.Infof("Connect succeed!\n")
-	}
 	opts.OnConnectionLost = func(client MQTT.Client, err error) {
 		m.logger.Infof("Connect lost: %v\n", err)
 	}
@@ -154,14 +151,12 @@ func (m *Manager) watchMemberUpdate(done <-chan struct{}) {
 				added := memberUpdate.Added[i]
 				id := added.Id
 				if strings.HasPrefix(id, "rule-") {
-					dd := m.getMemberDetail(id)
-					Sql, Actions := formatRule(dd)
+					Sql, Actions := formatRule(&added)
 					rule := NewRule(id, Sql, Actions, m.conn, m.ruleProcessor)
 					m.rules[id] = rule
 					go rule.Watch()
 				} else if strings.HasPrefix(id, "stream-") {
-					dd := m.getMemberDetail(id)
-					Datasource, Fields := formatStream(dd)
+					Datasource, Fields := formatStream(&added)
 					stream := NewStream(id, Datasource, Fields, m.conn, m.streamProcessor)
 					m.streams[id] = stream
 					go stream.Watch()
