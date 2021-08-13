@@ -95,7 +95,7 @@ func (s *Stream) handleStreamDelete() {
 func (s *Stream) handleStreamOpt() {
 	//check stream first
 	strs := strings.Split(s.Name, "-")
-	name := strs[0] + "_" + strs[1]
+	name := strs[0] + "_" + strings.Join(strs[1:], "_")
 	fields := make([]string, 0)
 
 	for k, v := range s.fields {
